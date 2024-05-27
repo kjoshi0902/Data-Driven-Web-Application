@@ -1,46 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const PricingCalculator = () => {
-  const [userId, setUserId] = useState('');
-  const [price, setPrice] = useState(null);
+  const [creditScore, setCreditScore] = useState(0);
+  const [creditLines, setCreditLines] = useState(0);
+  const [subscriptionPrice, setSubscriptionPrice] = useState(0);
 
-  const handleCalculate = async () => {
-    const result = await axios.get(`http://localhost:3000/calculate-pricing?userId=${userId}`);
-    setPrice(result.data.SubscriptionPrice);
+  const calculatePrice = async () => {
+    try {
+      const response = await axios.post('http://localhost:5000/calculate-price', {
+        creditScore,
+        creditLines,
+      });
+      setSubscriptionPrice(response.data.subscriptionPrice);
+    } catch (error) {
+      console.error('Error calculating price:', error);
+      alert('Error calculating price. Please try again.');
+    }
   };
+
+  useEffect(() => {
+    calculatePrice();
+  }, [creditScore, creditLines]);
 
   return (
     <div>
-      <h1>Subscription Pricing Calculator</h1>
-      <input type="text" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="Enter User ID" />
-      <button onClick={handleCalculate}>Calculate</button>
-      {price !== null && <div>Subscription Price: ${price}</div>}
+      <input type="number" value={creditScore} onChange={(e) => setCreditScore(e.target.value)} />
+      <input type="number" value={creditLines} onChange={(e) => setCreditLines(e.target.value)} />
+      <button onClick={calculatePrice}>Calculate Price</button>
+      <div>Subscription Price: ${subscriptionPrice}</div>
     </div>
   );
 };
 
 export default PricingCalculator;
-Update the main App.js file
-javascript
-Copy code
-// src/App.js
-import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
-import Upload from './components/Upload';
-import DataDisplay from './components/DataDisplay';
-import PricingCalculator from './components/PricingCalculator';
-
-function App() {
-  return (
-    <Router>
-      <Switch>
-        <Route path="/" exact component={Upload} />
-        <Route path="/data" component={DataDisplay} />
-        <Route path="/calculate-pricing" component={PricingCalculator} />
-      </Switch>
-    </Router>
-  );
-}
-
-export default App;
+// API endpoint for subscription price calculation
+app.post('/calculate-price', (req, res) => {
+    const { creditScore, creditLines } = req.body;
+    const basePrice = 50; // Example base price
+    const pricePerCreditLine = 10; // Example price per credit line
+    const pricePerCreditScorePoint = 5; // Example price per credit score point
+  
+    const subscriptionPrice =
+      basePrice + pricePerCreditLine * creditLines + pricePerCreditScorePoint * creditScore;
+  
+    res.status(200).json({ subscriptionPrice });
+  });
