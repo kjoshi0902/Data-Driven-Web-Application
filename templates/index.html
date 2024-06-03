@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Upload and Subscription Pricing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        label {
+            display: block;
+            padding: 10px 20px;
+            background: #007bff;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .progress {
+            display: none;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background: #007bff;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV Upload and Subscription Pricing</h1>
+        <form id="upload-form">
+            <input type="file" id="file-input" name="file">
+            <label for="file-input">Choose CSV File</label>
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <button type="submit">Upload</button>
+        </form>
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Credit Score</th>
+                    <th>Credit Lines</th>
+                    <th>Masked Phone Number</th>
+                    <th>Subscription Price</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const progressBar = document.getElementById('progress-bar');
+        const dataTable = document.getElementById('data-table').querySelector('tbody');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+
+                xhr.onloadstart = () => {
+                    progressBar.parentElement.style.display = 'block';
+                };
+
+                xhr.onloadend = () => {
+                    progressBar.parentElement.style.display = 'none';
+                    progressBar.style.width = '0';
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.data) {
+                            dataTable.innerHTML = '';
+                            response.data.forEach(row => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>${row.Email}</td>
+                                    <td>${row.Name}</td>
+                                    <td>${row.CreditScore}</td>
+                                    <td>${row.CreditLines}</td>
+                                    <td>${row.MaskedPhoneNumber}</td>
+                                    <td>${row.SubscriptionPrice}</td>
+                                `;
+                                dataTable.appendChild(tr);
+                            });
+                        }
+                    } else {
+                        alert('Failed to upload the file');
+                    }
+                };
+
+                xhr.send(formData);
+            } else {
+                alert('Please select a file');
+            }
+        });
+    </script>
+</body>
+</html>
